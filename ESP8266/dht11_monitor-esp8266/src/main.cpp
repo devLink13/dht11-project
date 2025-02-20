@@ -6,6 +6,9 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <TimeLib.h>
+#include <ArduinoJson.h>
+#include <FS.h>
+
 
 // inclusão de arquivos locais
 #include "credentials.h"
@@ -40,13 +43,54 @@ bool ntp_reconnect(bool activate_secundary_server = true, bool force_reboot_ESP 
 
 void setup()
 {
-
     Serial.begin(115200);                                  // iniciar a serial
     timeClient.begin();                                    // iniciar o ntp client
     timeClient.setTimeOffset(TIME_ZONE_ms);                // modifica o fuso horário.
     timeClient.setUpdateInterval(DEFAULT_INTERVAL_UPDATE); // define o tempo de atualização
 
     dht.begin(); // iniciar o dht11
+
+    // Initialize SPIFFS
+    if (!SPIFFS.begin()) {
+        Serial.println("Failed to mount file system");
+        return;
+    }
+
+    // Open the JSON file
+    File file = SPIFFS.open("/data/package.json", "r");
+    if (!file) {
+        Serial.println("Failed to open file");
+        return;
+    }
+
+    // Read the file into a String
+    String fileContent;
+    while (file.available()) {
+    fileContent += char(file.read());
+    }
+
+
+    // Parse the JSON
+    DynamicJsonDocument doc(1024);
+    DeserializationError error = deserializeJson(doc, fileContent);
+
+    if (error) {
+        Serial.print("Failed to parse JSON: ");
+        Serial.println(error.c_str());
+        return;
+    }
+
+    // Access the values in the JSON
+    const char* ssid = doc["config"]["ssid"];
+    const char* password = doc["config"]["password"];
+    int baudRate = doc["config"]["baud-rate"];
+
+    Serial.println(ssid);
+    Serial.println(password);
+    Serial.println(baudRate);
+
+    // Close the file
+    file.close();
 
     // conectar ao wifi
     WiFi.begin(ssid, password);

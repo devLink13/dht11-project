@@ -1,0 +1,26 @@
+{
+    "version" : "1.0.0",
+    "description": "temperature monitor in real time with ESP8266 and DHT11",
+    "id" : 1,
+    "token_id" : "default_token",
+    "main_files" : ["main.cpp", "package.json"],
+
+    "config" : {
+        "baud-rate" : 115200,
+        "ssid" : "ssid_default",
+        "password" : "password_default",
+        "port_config" : 54321,
+        "server-ntp_primary" : "pool.ntp.org",
+        "server-ntp_secundary" : "time.nist.gov",
+        "interval_ntp_connection" : 3600000,
+        "dht_amostras" : 10,
+        "hard_reset" : false,
+        "base_url" : "http://minha-api.com/"
+    },
+
+    "wifi_connection": {
+        "ip_local" : "000.000.00.0",
+        "wifi_ssid" : "Default ssid",
+        "wifi_password" : "Default password"
+    }
+}
