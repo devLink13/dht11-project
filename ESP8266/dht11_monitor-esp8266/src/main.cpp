@@ -7,7 +7,7 @@
 #include <NTPClient.h>
 #include <TimeLib.h>
 #include <ArduinoJson.h>
-#include <FS.h>
+#include "FS.h"
 
 
 // inclusão de arquivos locais
@@ -50,47 +50,10 @@ void setup()
 
     dht.begin(); // iniciar o dht11
 
-    // Initialize SPIFFS
-    if (!SPIFFS.begin()) {
-        Serial.println("Failed to mount file system");
+    if(!SPIFFS.begin()){
+        Serial.println("An Error has occurred while mounting SPIFFS");
         return;
     }
-
-    // Open the JSON file
-    File file = SPIFFS.open("/data/package.json", "r");
-    if (!file) {
-        Serial.println("Failed to open file");
-        return;
-    }
-
-    // Read the file into a String
-    String fileContent;
-    while (file.available()) {
-    fileContent += char(file.read());
-    }
-
-
-    // Parse the JSON
-    DynamicJsonDocument doc(1024);
-    DeserializationError error = deserializeJson(doc, fileContent);
-
-    if (error) {
-        Serial.print("Failed to parse JSON: ");
-        Serial.println(error.c_str());
-        return;
-    }
-
-    // Access the values in the JSON
-    const char* ssid = doc["config"]["ssid"];
-    const char* password = doc["config"]["password"];
-    int baudRate = doc["config"]["baud-rate"];
-
-    Serial.println(ssid);
-    Serial.println(password);
-    Serial.println(baudRate);
-
-    // Close the file
-    file.close();
 
     // conectar ao wifi
     WiFi.begin(ssid, password);
@@ -117,59 +80,66 @@ void setup()
 
 void loop()
 {
-    while (WiFi.status() == WL_CONNECTED)
-    {
-        timeClient.update();                                 // atualiza o ntp
-        unsigned long epochTime = timeClient.getEpochTime(); // pega o epoch time
-        setTime(epochTime);                                  // passa o epoch para a biblioteca TimeLib
-
-        // pega as datas usando a timelib
-        int currentYear = year();
-        int currentMonth = month();
-        int currentDay = day();
-        int currentHour = hour();
-        int currentMinute = minute();
-        int currentSecond = second();
-
-        // Serial.printf("Data e hora: %04d-%02d-%2d %02d:%2d:%4d\n", currentYear, currentMonth, currentDay, currentHour, currentMinute, currentSecond);
-
-        // //faz uma requisição get,
-        // http.begin(wifiClient, baseURL);
-        //     int codeStatus = http.GET(); // faz um get neste rota...
-
-        // verificar o código de resposta
-        // if (codeStatus > 0)
-        // {
-        //     String payload = http.getString();
-        //     Serial.println(payload);
-        // }
-
-        // else
-
-        // {
-        //     Serial.println("ERRO NA REQUISIÇÃO.");
-        // }
-        // http.end();
-
-        // obter e atualizar as leituras
-        std::array<float, 5> leitura_dht = readDHT11(DHT_AMOSTRAS);
-        float temperatureC = leitura_dht[0];
-        float temperatureF = leitura_dht[1];
-        float humidity = leitura_dht[2];
-        float sensacao_termica = leitura_dht[3];
-        // float count_amostras = leitura_dht[4]; // ignorar isso
-
-        // formatação do datalog
-        char data_log[75];
-        // data = "0000-00-00 00:00:00;temperaturaC;temperaturaF;sensacao_termica;humidity"
-        const char *data_template = "%04d-%02d-%02d %02d:%02d:%02d;%.2f;%.2f;%.2f;%.0f";
-        snprintf(data_log, sizeof(data_log), data_template, currentYear, currentMonth, currentDay, currentHour, currentMinute, currentSecond, temperatureC, temperatureF, sensacao_termica, humidity);
-
-        Serial.println(data_log);
-        delay(2000);
+    File file = SPIFFS.open("/config.json", "r");
+    Serial.println("File Content:");
+    while(file.available()){
+    Serial.write(file.read());
     }
+    file.close();
+    delay(10000);
+    // while (WiFi.status() == WL_CONNECTED)
+    // {
+    //     timeClient.update();                                 // atualiza o ntp
+    //     unsigned long epochTime = timeClient.getEpochTime(); // pega o epoch time
+    //     setTime(epochTime);                                  // passa o epoch para a biblioteca TimeLib
 
-    Serial.println("ESP8266 PERDEU A CONEXÃO COM A REDE...");
+    //     // pega as datas usando a timelib
+    //     int currentYear = year();
+    //     int currentMonth = month();
+    //     int currentDay = day();
+    //     int currentHour = hour();
+    //     int currentMinute = minute();
+    //     int currentSecond = second();
+
+    //     // Serial.printf("Data e hora: %04d-%02d-%2d %02d:%2d:%4d\n", currentYear, currentMonth, currentDay, currentHour, currentMinute, currentSecond);
+
+    //     // //faz uma requisição get,
+    //     // http.begin(wifiClient, baseURL);
+    //     //     int codeStatus = http.GET(); // faz um get neste rota...
+
+    //     // verificar o código de resposta
+    //     // if (codeStatus > 0)
+    //     // {
+    //     //     String payload = http.getString();
+    //     //     Serial.println(payload);
+    //     // }
+
+    //     // else
+
+    //     // {
+    //     //     Serial.println("ERRO NA REQUISIÇÃO.");
+    //     // }
+    //     // http.end();
+
+    //     // obter e atualizar as leituras
+    //     std::array<float, 5> leitura_dht = readDHT11(DHT_AMOSTRAS);
+    //     float temperatureC = leitura_dht[0];
+    //     float temperatureF = leitura_dht[1];
+    //     float humidity = leitura_dht[2];
+    //     float sensacao_termica = leitura_dht[3];
+    //     // float count_amostras = leitura_dht[4]; // ignorar isso
+
+    //     // formatação do datalog
+    //     char data_log[75];
+    //     // data = "0000-00-00 00:00:00;temperaturaC;temperaturaF;sensacao_termica;humidity"
+    //     const char *data_template = "%04d-%02d-%02d %02d:%02d:%02d;%.2f;%.2f;%.2f;%.0f";
+    //     snprintf(data_log, sizeof(data_log), data_template, currentYear, currentMonth, currentDay, currentHour, currentMinute, currentSecond, temperatureC, temperatureF, sensacao_termica, humidity);
+
+    //     Serial.println(data_log);
+    //     delay(2000);
+    // }
+
+    // Serial.println("ESP8266 PERDEU A CONEXÃO COM A REDE...");
 }
 
 std::array<float, 5> readDHT11(int amostragem)
